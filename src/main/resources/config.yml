@@ -1,0 +1,144 @@
+# Configuration générale de SHHypeVotes
+general:
+  # Nombre minimum de joueurs en ligne pour tenter de lancer un Hype Train automatiquement.
+  min-players-online-for-random-start: 25
+  # Fenêtre d'intervalle (en minutes) après laquelle un Hype Train aléatoire peut démarrer.
+  # Le plugin choisira un délai aléatoire entre 'min' et 'max' pour tenter le prochain lancement,
+  # si le nombre de joueurs minimum est atteint.
+  random-start-interval-minutes: # minutes
+    min: 160
+    max: 280 
+  # Durée du Hype Train en secondes.
+  hype-duration-seconds: 1800 # 30 minutes
+  # Format du countdown pour %time_remaining% et %duration%.
+  # Exemples: "mm:ss", "HH:mm:ss", "M 'minutes' s 'secondes'"
+  countdown-format: "HH'h'mm'm'ss's'"
+
+# Configuration des sons (noms de sons de Minecraft, ex: ENTITY_PLAYER_LEVELUP, BLOCK_NOTE_BLOCK_PLING)
+# Liste des sons: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html
+sounds:
+  hype-start:
+    enabled: true
+    sound: "ENTITY_PLAYER_LEVELUP"
+    volume: 1.0 # De 0.0 à ... (Minecraft clamp, mais 1.0 est le volume normal)
+    pitch: 1.0  # De 0.5 à 2.0 (1.0 est la hauteur normale)
+  goal-reach:
+    enabled: true
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    volume: 1.0
+    pitch: 1.2
+  hype-end:
+    enabled: true
+    sound: "ENTITY_FIREWORK_ROCKET_LARGE_BLAST" # Un son plus final
+    volume: 1.0
+    pitch: 0.8
+
+# Configuration des paliers du Hype Train
+# Les paliers DOIVENT être listés par ordre croissant de 'threshold'.
+goals:
+  goal1:
+    displayName: "&eLuckyBlock Jaune x1"
+    threshold: 2
+    time-extension-seconds: 0
+    bossbar-theme-color: "GREEN"
+    commands:
+      - "qc queue %player% shwc %player% luckyblock give %player% YELLOW 1"
+      - "qc queue %player% shwc %player% sm %player% &7&l« &d&lHYPE &8&l» &7Vous avez reçu &a1 LuckyBlock Jaune&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal2:
+    displayName: "&aClé Ordinaire x1 &7+ &eLuckyBlock Jaune x1"
+    threshold: 5
+    time-extension-seconds: 300
+    bossbar-theme-color: "GREEN"
+    commands:
+      - "qc queue %player% shwc %player% luckyblock give %player% YELLOW 1"
+      - "qc queue %player% shwc %player% shcrates givekey %player% ordinaire 1 p"
+      - "qc queue %player% shwc %player% sm %player% &7&l« &d&lHYPE &8&l» &7Vous avez reçu &e1 Clé Ordinaire &7et &e1 LuckyBlock Jaune&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal3:
+    displayName: "&eClé Ordinaire x3"
+    threshold: 15
+    time-extension-seconds: 600
+    bossbar-theme-color: "YELLOW"
+    commands:
+      - "qc queue %player% shwc %player% shcrates givekey %player% ordinaire 3 p"
+      - "qc queue %player% shwc %player% sm %player% &7&l« &d&lHYPE &8&l» &7Vous avez reçu &e3 Clés Ordinaires&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal4:
+    displayName: "&eClé Ordinaire x5 &7+ &eLuckyBlock Jaune x2"
+    threshold: 30
+    time-extension-seconds: 600
+    bossbar-theme-color: "PURPLE"
+    commands:
+      - "qc queue %player% shwc %player% luckyblock give %player% YELLOW 2"
+      - "qc queue %player% shwc %player% shcrates givekey %player% ordinaire 5 p"
+      - "qc queue %player% shwc %player% sm %player% &7&l« &d&lHYPE &8&l» &7Vous avez reçu &e5 Clés Ordinaires &7et &e2 LuckyBlock Jaune&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal5:
+    displayName: "&bClé rare x1"
+    threshold: 60
+    time-extension-seconds: 600
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% shcrates givekey %player% rare 1 p"
+      - "qc queue %player% shwc %player% sm %player% &7&7&l« &d&lHYPE &8&l» &7Vous avez reçu &b1 Clé Rare&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal6:
+    displayName: "&bClé rare x1 &7+ &e5 Clés Ordinaires"
+    threshold: 90
+    time-extension-seconds: 600
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% shcrates givekey %player% rare 1 p"
+      - "qc queue %player% shwc %player% shcrates givekey %player% ordinaire 5 p"
+      - "qc queue %player% shwc %player% sm %player% &7&7&l« &d&lHYPE &8&l» &7Vous avez reçu &b1 Clé Rare &7et &e5 Clés Ordinaires&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal7:
+    displayName: "&bClé rare x1 &7+ &eLuckyBlock Vert x1"
+    threshold: 130
+    time-extension-seconds: 600
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% luckyblock give %player% YELLOW 2"
+      - "qc queue %player% shwc %player% shcrates givekey %player% rare 1 p"
+      - "qc queue %player% shwc %player% sm %player% &7&l« &d&lHYPE &8&l» &7Vous avez reçu &e1 Clé Rare &7et &a2 LuckyBlock Vert&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal8:
+    displayName: "&bClé Rare x2"
+    threshold: 175
+    time-extension-seconds: 3500
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% shcrates givekey %player% rare 2 p"
+      - "qc queue %player% shwc %player% sm %player% &7&7&l« &d&lHYPE &8&l» &7Vous avez reçu &b2 Clés Rares&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal9:
+    displayName: "&6Clé légendaire x1"
+    threshold: 190
+    time-extension-seconds: 3500
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% shcrates givekey %player% legendaire 1 p"
+      - "qc queue %player% shwc %player% sm %player% &7&7&l« &d&lHYPE &8&l» &7Vous avez reçu &61 Clé Légendaire&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+  goal10:
+    displayName: "&6Clé légendaire x1 &7+ &aLuckyBlock Vert x2"
+    threshold: 250
+    time-extension-seconds: 0
+    bossbar-theme-color: "RED"
+    commands:
+      - "qc queue %player% shwc %player% luckyblock give %player% LIME 2"
+      - "qc queue %player% shwc %player% shcrates givekey %player% legendaire 1 p"
+      - "qc queue %player% shwc %player% sm %player% &7&7&l« &d&lHYPE &8&l» &7Vous avez reçu &61 Clé Légendaire &7et &a1 LuckyBlock Vert&7."
+      - "qc queue %player% shwc %player% sm %player% &7(Récompense évènement HYPE)"
+
+bossbar:
+  enabled: true
+  # Intervalle de mise à jour de la bossbar en ticks (20 ticks = 1 seconde).
+  update-interval-ticks: 20
+  # %current_votes%, %goal_votes%, %goal_name%, %next_goal_votes%, %next_goal_name%, %time_remaining%, %total_votes_for_hype%
+  format: "&d&lHYPE &f&l⚡ &7Votes: &e%current_votes%&7/&6%goal_votes% &7(&6%goal_name%&7) &7| Temps: &d%time_remaining%"
+  # Style: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20
+  style: "SOLID"
+  # Couleur par défaut: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW
+  color: "GREEN"

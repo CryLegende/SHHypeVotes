@@ -1,0 +1,19 @@
+name: SHHypeVotes
+version: '${project.version}'
+main: org.Cry_Legende.sHHypeVotes.SHHypeVotes
+api-version: '1.20'
+author: Cry_Legende
+description: Un système de Hype Train pour les votes avec récompenses par paliers.
+depend: [Votifier]
+
+commands:
+  shh:
+    description: Commande principale pour SHHypeVotes.
+    aliases: [hypevotes, hv, shhvote]
+    permission: shh.admin
+    usage: "/shh <start|stop|end|reload|status>"
+
+permissions:
+  shh.admin:
+    description: Permet d'utiliser toutes les commandes de SHHypeVotes.
+    default: op

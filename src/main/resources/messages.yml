@@ -1,0 +1,85 @@
+# SHHypeVotes - Messages
+#
+# Information:
+# Vous pouvez utiliser les placeholders listés dans chaque section.
+# Les messages multilignes (hype-started, goal-reached, hype-ended) sont des annonces
+# et ne prendront pas le préfixe SH individuel pour un meilleur affichage.
+
+prefix: "" # Le préfixe est géré par message individuel
+
+no-permission: "&7&l« &c&lSH &8&l» &7Vous n'avez pas la permission d'utiliser cette commande."
+player-only-command: "&7&l« &c&lSH &8&l» &7Cette commande ne peut être exécutée que par un joueur."
+unknown-subcommand: "&7&l« &c&lSH &8&l» &7Sous-commande inconnue. Usage: &c/shh <start|stop|reload|status>"
+
+hype-already-active: "&7&l« &c&lSH &8&l» &7Un Hype est déjà en cours !"
+hype-not-active: "&7&l« &c&lSH &8&l» &7Il n'y a pas de Hype en cours."
+force-start-success: "&7&l« &a&lSH &8&l» &7Hype démarré de force !"
+force-stop-success: "&7&l« &a&lSH &8&l» &7Hype arrêté de force."
+reload-success: "&7&l« &a&lSH &8&l» &7Configuration et messages de SHHypeVotes rechargés."
+
+# Placeholders pour les messages suivants:
+# %current_votes%, %total_votes_for_hype% = votes actuels du hype
+# %goal_name%, %goal_votes% = nom et seuil du palier actuel/atteint/visé (contextuel)
+# %next_goal_name%, %next_goal_votes% = nom et seuil du prochain palier
+# %final_goal_name%, %final_reward_display_name% = nom du palier final atteint et sa récompense (pour hype-ended)
+# %time_remaining% = temps restant du hype
+# %duration% = durée totale configurée du hype
+# %voter_count% = nombre de joueurs uniques ayant voté pendant le hype
+
+hype-started: # Annonce globale, pas de préfixe SH par ligne
+  - "&r"
+  - "&r        &7&l« &f⚡ &8&l» &d&lʜʏᴘᴇᴠᴏᴛᴇ ᴇɴ ᴄᴏᴜʀѕ &7&l« &f⚡ &8&l»"
+  - "&fᴠᴏᴛᴇᴢ ᴘᴏᴜʀ ᴄᴏɴᴛʀɪʙᴜᴇʀ ᴇᴛ ɢᴀɢɴᴇʀ ᴅᴇѕ ʀᴇᴄᴏᴍᴘᴇɴѕᴇѕ !"
+  - "&r"
+  - "&6✨ &fObjectif actuel: &d%goal_name% &f(&e%current_votes%&f/&6%goal_votes% votes&f)"
+  - "&6✨ &fTemps restant: &e%duration%"
+  - "&r"
+  - "&7&o(( &oVotez sur: &d&oskyhand.fr/vote &8&o))"
+  - "&r"
+
+goal-reached: # Annonce globale
+  - "&r"
+  - "&r      &7&l« &f⭐ &8&l» &d&lʜʏᴘᴇᴠᴏᴛᴇ : ᴘᴀʟɪᴇʀ ᴀᴛᴛᴇɪɴᴛ &7&l« &f⭐ &8&l»"
+  - "&fPalier &e%goal_name% &fa été atteint avec &d%current_votes% votes &f!"
+  - "&r"
+  - "{IF_NEXT_GOAL_EXISTS}"
+  - "&6✨ &fProchain objectif: &d%next_goal_name% &f(&e%current_votes%&f/&6%next_goal_votes% votes&f)"
+  - "{ENDIF_NEXT_GOAL_EXISTS}"
+  - "{IF_NO_NEXT_GOAL}"
+  - "&f&oC'était le dernier palier, félicitations !"
+  - "{ENDIF_NO_NEXT_GOAL}"
+  - "{IF_TIME_ADDED}"
+  - "&6✨ &a&l+&a%time_added% &fde temps ajouté au Hype !"
+  - "{ENDIF_TIME_ADDED}"
+  - "&r"
+  - "&7&l« &7Les récompenses sont distribuées à la fin du Hype."
+  - "&7Fin de l'évènement dans &e%time_remaining% &8&l»"
+  - "&r"
+  - "&7&o(( &oVotez sur: &d&oskyhand.fr/vote &8&o))"
+  - "&r"
+
+hype-ended: # Annonce globale
+  - "&r"
+  - "&r        &7&l« &f⚡ &8&l» &d&lʜʏᴘᴇᴠᴏᴛᴇ ᴛᴇʀᴍɪɴᴇ &7&l« &f⚡ &8&l»"
+  - "&r"
+  - "{IF_REWARDS_GIVEN}"
+  - "&6✨ &fPalier final: &e%final_goal_name% &favec &6%total_votes_for_hype% votes &f!"
+  - "&r"
+  - "&d%voter_count% &fjoueurs ont voté durant cette Hype."
+  - "&8&o(&7&oRécompense obtenue: %final_reward_display_name%&8&o)"
+  - "{ENDIF_REWARDS_GIVEN}"
+  - "{IF_NO_REWARDS_GIVEN}"
+  - "&f&oAucun palier n'a été atteint cette fois-ci."
+  - "&fNombre total de votes: &d%total_votes_for_hype%&f."
+  - "{ENDIF_NO_REWARDS_GIVEN}"
+  - "&r"
+  - "&7&o(( &oVotez sur: &d&oskyhand.fr/vote &8&o))"
+  - "&r"
+
+vote-counted-in-hype: "&7&l« &a&lSH &8&l» &7Vous faites monter la &aHype&7 !"
+vote-counted-no-hype: ""
+
+# Placeholders spécifiques pour les messages de service (non envoyés aux joueurs directement, mais utilisés par le code)
+no-next-goal-placeholder: "Tous atteints !"
+no-final-goal-placeholder: "Aucun palier"
+no-final-reward-placeholder: "Aucune récompense"
