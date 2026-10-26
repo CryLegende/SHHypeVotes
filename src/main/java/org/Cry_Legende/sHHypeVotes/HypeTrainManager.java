@@ -2,7 +2,9 @@ package org.Cry_Legende.sHHypeVotes;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
@@ -15,6 +17,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -47,13 +50,28 @@ public class HypeTrainManager {
 
     private void playSoundToAll(ConfigManager.SoundEffect soundEffect) {
         if (soundEffect == null || !soundEffect.enabled) return;
-        try {
-            Sound sound = Sound.valueOf(soundEffect.soundName.toUpperCase());
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                player.playSound(player.getLocation(), sound, soundEffect.volume, soundEffect.pitch);
-            }
-        } catch (IllegalArgumentException e) {
+        Sound sound = sound(soundEffect.soundName);
+        if (sound == null) {
             plugin.logWarn("Son invalide configuré: " + soundEffect.soundName);
+            return;
+        }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(player.getLocation(), sound, soundEffect.volume, soundEffect.pitch);
+        }
+    }
+
+    /** Son lu en config : ancien nom (ENTITY_PLAYER_LEVELUP) ou clé (minecraft:entity.player.levelup). */
+    static Sound sound(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String s = raw.trim();
+        if (s.indexOf(':') >= 0 || s.indexOf('.') >= 0) {
+            NamespacedKey key = NamespacedKey.fromString(s.toLowerCase(Locale.ROOT));
+            return key == null ? null : Registry.SOUND_EVENT.get(key);
+        }
+        try {
+            return (Sound) Sound.class.getField(s.toUpperCase(Locale.ROOT)).get(null);
+        } catch (ReflectiveOperationException | ClassCastException e) {
+            return null;
         }
     }
 
@@ -397,6 +415,11 @@ public class HypeTrainManager {
 
     public void scheduleRandomHypeTrainAttempt() {
         cancelRandomHypeTask();
+        // Arrêt du Hype Train pendant onDisable : le plugin est déjà désactivé, aucune tâche ne peut être planifiée
+        if (!plugin.isEnabled()) {
+            nextRandomHypeAttemptTimeMillis = 0;
+            return;
+        }
         if (configManager.minPlayersOnlineForRandomStart <= 0 || configManager.randomStartIntervalMinMinutes <= 0) {
             plugin.logInfo("Démarrage aléatoire du Hype Train désactivé.");
             nextRandomHypeAttemptTimeMillis = 0;

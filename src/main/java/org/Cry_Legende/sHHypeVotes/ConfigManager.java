@@ -6,6 +6,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -78,9 +79,12 @@ public class ConfigManager {
             plugin.saveResource("config.yml", false);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
-        InputStream defaultConfigStream = plugin.getResource("config.yml");
-        if (defaultConfigStream != null) {
-            config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)));
+        try (InputStream defaultConfigStream = plugin.getResource("config.yml")) {
+            if (defaultConfigStream != null) {
+                config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)));
+            }
+        } catch (IOException e) {
+            plugin.logWarn("Lecture des valeurs par défaut de config.yml impossible: " + e.getMessage());
         }
 
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
@@ -88,11 +92,21 @@ public class ConfigManager {
             plugin.saveResource("messages.yml", false);
         }
         messages = YamlConfiguration.loadConfiguration(messagesFile);
-        InputStream defaultMessagesStream = plugin.getResource("messages.yml");
-        if (defaultMessagesStream != null) {
-            messages.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaultMessagesStream, StandardCharsets.UTF_8)));
+        FileConfiguration bundledMessages = loadBundledMessages();
+        if (bundledMessages != null) {
+            messages.setDefaults(bundledMessages);
         }
         parseConfigValues();
+    }
+
+    /** Messages par défaut embarqués dans le jar (flux refermé), ou null s'ils sont illisibles. */
+    private FileConfiguration loadBundledMessages() {
+        try (InputStream in = plugin.getResource("messages.yml")) {
+            if (in == null) return null;
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            return null;
+        }
     }
 
 
@@ -167,9 +181,8 @@ public class ConfigManager {
         String message = messages.getString(path);
         if (message == null) {
             plugin.logWarn("Message non trouvé dans messages.yml: " + path + ". Utilisation d'un message par défaut.");
-            InputStream defaultMessagesStream = plugin.getResource("messages.yml");
-            if (defaultMessagesStream != null) {
-                FileConfiguration defaultMessages = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultMessagesStream, StandardCharsets.UTF_8));
+            FileConfiguration defaultMessages = loadBundledMessages();
+            if (defaultMessages != null) {
                 message = defaultMessages.getString(path);
             }
             if (message == null) {
@@ -187,9 +200,8 @@ public class ConfigManager {
         if (messageList.isEmpty()) {
             plugin.logWarn("Liste de messages non trouvée ou vide dans messages.yml: " + path + ". Utilisation d'un message par défaut.");
             List<String> fallbackList = new ArrayList<>();
-            InputStream defaultMessagesStream = plugin.getResource("messages.yml");
-            if (defaultMessagesStream != null) {
-                FileConfiguration defaultMessages = YamlConfiguration.loadConfiguration(new InputStreamReader(defaultMessagesStream, StandardCharsets.UTF_8));
+            FileConfiguration defaultMessages = loadBundledMessages();
+            if (defaultMessages != null) {
                 fallbackList = defaultMessages.getStringList(path);
                 if (fallbackList.isEmpty() && defaultMessages.contains(path) && defaultMessages.isString(path)) {
                     fallbackList.add(defaultMessages.getString(path));
