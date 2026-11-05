@@ -1,5 +1,6 @@
 package org.Cry_Legende.sHHypeVotes;
 
+import fr.topicfly.shvotesreward.SHVotesReward;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.NamespacedKey;
@@ -10,6 +11,7 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -24,6 +26,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class HypeTrainManager {
+
+    private final HypeStateStore stateStore;
 
     private final SHHypeVotes plugin;
     private final ConfigManager configManager;
@@ -46,6 +50,11 @@ public class HypeTrainManager {
         this.configManager = plugin.getConfigManager();
         this.isActive = false;
         this.votersInCurrentHype = new HashSet<>();
+        this.stateStore = new HypeStateStore(JavaPlugin.getPlugin(SHVotesReward.class).database());
+        stateStore.createTables();
+        stateStore.saveGoals(configManager.getGoals());
+        // Un arrêt brutal laisse le Hype actif en base : il repart à zéro avec le serveur.
+        stateStore.save(false, 0, 0);
     }
 
     private void playSoundToAll(ConfigManager.SoundEffect soundEffect) {
@@ -93,6 +102,7 @@ public class HypeTrainManager {
 
         this.startTimeMillis = System.currentTimeMillis();
         this.endTimeMillis = this.startTimeMillis + (configManager.hypeDurationSeconds * 1000L);
+        stateStore.save(true, currentVotes, endTimeMillis);
 
         if (configManager.bossBarEnabled) {
             createBossBar();
@@ -195,6 +205,7 @@ public class HypeTrainManager {
         currentVotes = 0;
         currentHighestGoalReached = null;
         nextGoalToAnnounce = null;
+        stateStore.save(false, 0, 0);
 
         scheduleRandomHypeTrainAttempt();
     }
@@ -222,6 +233,7 @@ public class HypeTrainManager {
         plugin.logInfo("Vote de " + playerNameForLog + " compté. Total: " + currentVotes);
 
         checkGoals();
+        stateStore.save(true, currentVotes, endTimeMillis);
         if (configManager.bossBarEnabled && bossBar != null) {
             updateBossBar();
         }
@@ -563,6 +575,7 @@ public class HypeTrainManager {
 
     public void reload() {
         cancelRandomHypeTask();
+        stateStore.saveGoals(configManager.getGoals());
         if (isActive && bossBar != null) {
             if (!configManager.bossBarEnabled) {
                 bossBar.removeAll();

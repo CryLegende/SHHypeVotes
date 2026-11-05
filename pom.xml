@@ -6,7 +6,7 @@
 
     <groupId>org.Cry_Legende</groupId>
     <artifactId>SHHypeVotes</artifactId>
-    <version>1.1</version>
+    <version>1.2</version>
     <packaging>jar</packaging>
 
     <name>SHHypeVotes</name>
@@ -88,7 +88,7 @@
         <dependency>
             <groupId>fr.topicfly</groupId>
             <artifactId>SHVotesReward</artifactId>
-            <version>2.1.0</version>
+            <version>2.2.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

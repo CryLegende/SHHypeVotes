@@ -16,6 +16,8 @@
 
 Un système de Hype Train pour les votes avec récompenses par paliers.
 
+Le site affiche le Hype en cours : le plugin écrit son état dans `shh_state` et ses paliers dans `shh_goals`, dans la base de SHVotesReward.
+
 Utilisé sur : **Opale**.
 
 ## Dépendances
