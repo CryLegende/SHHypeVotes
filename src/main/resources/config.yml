@@ -2,7 +2,7 @@
 #                  Configuration de SHHypeVotes                   #
 # ----------------------------------------------------------------#
 #
-# Hype Train des votes : chaque vote reçu (Votifier) pendant un Hype Train fait monter un compteur de votes.
+# Hype Train des votes : chaque vote reçu par SHVotesReward pendant un Hype Train fait monter un compteur de votes.
 # Chaque palier atteint peut ajouter du temps au Hype, et à la fin les commandes du plus haut palier atteint
 # sont lancées pour chaque votant. Un Hype Train se lance aussi tout seul, au hasard, quand assez de joueurs
 # sont en ligne.

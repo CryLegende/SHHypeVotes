@@ -24,16 +24,7 @@ public class SHHypeVotes extends JavaPlugin {
         configManager.reloadConfigs();
 
 
-        // 2. Vérifier la dépendance Votifier
-        if (getServer().getPluginManager().getPlugin("Votifier") == null) {
-            getLogger().severe("Votifier (ou NuVotifier) n'a pas été trouvé. SHHypeVotes ne peut pas fonctionner sans lui.");
-            getLogger().severe("Veuillez installer Votifier: https://www.spigotmc.org/resources/votifier.134/");
-            getServer().getPluginManager().disablePlugin(this);
-            return;
-        }
-        getLogger().info("Votifier trouvé, SHHypeVotes va s'accrocher aux événements de vote.");
-
-        // 3. Initialiser le logger et le gestionnaire du Hype Train
+        // 2. Initialiser le logger et le gestionnaire du Hype Train
         hypeLogger = new HypeLogger(this);
         hypeTrainManager = new HypeTrainManager(this);
 
@@ -42,17 +33,17 @@ public class SHHypeVotes extends JavaPlugin {
             // Ne pas désactiver le plugin, mais le Hype Train sera limité.
         }
 
-        // 4. Enregistrer les listeners
+        // 3. Enregistrer les listeners
         PluginManager pm = getServer().getPluginManager();
         pm.registerEvents(new VoteListener(this), this);
         pm.registerEvents(new PlayerConnectionListener(this), this);
 
-        // 5. Enregistrer les commandes
+        // 4. Enregistrer les commandes
         HypeCommands hypeCommandsExecutor = new HypeCommands(this);
         Objects.requireNonNull(getCommand("shh")).setExecutor(hypeCommandsExecutor);
         Objects.requireNonNull(getCommand("shh")).setTabCompleter(hypeCommandsExecutor);
 
-        // 6. Démarrer la tâche pour les lancements aléatoires
+        // 5. Démarrer la tâche pour les lancements aléatoires
         hypeTrainManager.scheduleRandomHypeTrainAttempt();
 
         getLogger().info("SHHypeVotes a été activé avec succès !");

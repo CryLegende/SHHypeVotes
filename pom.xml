@@ -6,7 +6,7 @@
 
     <groupId>org.Cry_Legende</groupId>
     <artifactId>SHHypeVotes</artifactId>
-    <version>1.0</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>SHHypeVotes</name>
@@ -86,9 +86,9 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.NuVotifier</groupId>
-            <artifactId>nuvotifier</artifactId>
-            <version>2.7.2</version>
+            <groupId>fr.topicfly</groupId>
+            <artifactId>SHVotesReward</artifactId>
+            <version>2.1.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

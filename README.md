@@ -20,7 +20,7 @@ Utilisé sur : **Opale**.
 
 ## Dépendances
 
-- Obligatoires : `Votifier`
+- Obligatoire : `SHVotesReward`, qui reçoit les votes
 - Optionnelle : `SHLogs`
 
 ## Commandes
@@ -49,7 +49,7 @@ Le résumé de chaque Hype Train terminé est écrit dans le fichier `hype` du d
 
 ## Compilation
 
-Java 25 et Maven :
+Java 25 et Maven. SHLogs et SHVotesReward ne sont sur aucun dépôt Maven : il faut d'abord les installer depuis leurs sources avec `mvn install`, puis :
 
 ```bash
 mvn clean package
