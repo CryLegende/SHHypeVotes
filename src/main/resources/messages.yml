@@ -83,3 +83,38 @@ vote-counted-no-hype: ""
 no-next-goal-placeholder: "Tous atteints !"
 no-final-goal-placeholder: "Aucun palier"
 no-final-reward-placeholder: "Aucune récompense"
+
+# Erreurs des commandes /shh.
+not-initialized: "&7&l« &c&lSH &8&l» &7Le plugin n'est pas correctement initialisé. Consultez la &cconsole&7."
+start-no-goals: "&7&l« &c&lSH &8&l» &7Impossible de démarrer : &caucun palier &7n'est configuré."
+start-failed: "&7&l« &c&lSH &8&l» &7Le Hype n'a pas pu démarrer. Consultez la &cconsole&7."
+
+# Aide de /shh : une ligne par élément, sans préfixe.
+help:
+  - "&bCommandes disponibles:"
+  - "&6/shh start &7- Démarre de force un Hype Train."
+  - "&6/shh stop &7- Arrête de force le Hype Train en cours."
+  - "&6/shh end &7- Termine le Hype en distribuant les récompenses atteintes."
+  - "&6/shh reload &7- Recharge la configuration du plugin."
+  - "&6/shh status &7- Affiche le statut actuel du Hype Train."
+
+# Statut de /shh status : une ligne par message, sans préfixe.
+# Placeholders : %votes% votes du Hype, %time% temps restant ou avant la prochaine tentative, %goal% nom du palier,
+# %threshold% son seuil, %voters% votants uniques, %count% paliers configurés.
+status-header: "&6--- &eStatut SHHypeVotes &6---"
+status-active: "&aHype Train: ACTIF"
+status-votes: "&e  Votes: &f%votes%"
+status-time-left: "&e  Temps restant: &f%time%"
+status-current-goal: "&e  Dernier palier atteint: %goal%&7 (%threshold%)"
+status-current-goal-none: "&e  Dernier palier atteint: &fAucun"
+status-next-goal: "&e  Prochain palier: %goal%&7 (%threshold%)"
+status-all-goals-reached: "&e  Prochain palier: &aTous les paliers atteints !"
+status-no-goal-configured: "&e  Prochain palier: &cAucun palier configuré"
+status-next-goal-error: "&e  Prochain palier: &cErreur"
+status-voters: "&e  Votants uniques: &f%voters%"
+status-inactive: "&cHype Train: INACTIF"
+status-next-attempt: "&e  Prochaine tentative aléatoire dans: &f%time%"
+status-attempt-imminent: "&e  Tentative de lancement aléatoire: &fImminente ou en cours..."
+status-attempt-unplanned: "&e  Prochaine tentative aléatoire: &fNon planifiée."
+status-goals-count: "&ePaliers configurés: &f%count%"
+status-footer: "&6-------------------------"

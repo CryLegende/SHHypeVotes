@@ -32,7 +32,7 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (configManager == null || hypeTrainManager == null) {
-            sender.sendMessage(ChatColor.RED + "Erreur: Le plugin SHHypeVotes n'est pas correctement initialisé.");
+            sender.sendMessage(configManager.getPrefixedMessage("not-initialized"));
             return true;
         }
 
@@ -72,13 +72,13 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             return;
         }
         if (configManager.getGoals().isEmpty()) {
-            sender.sendMessage(configManager.getPrefixedMessage("prefix") + ChatColor.RED + "Impossible de démarrer: Aucun palier configuré !");
+            sender.sendMessage(configManager.getPrefixedMessage("start-no-goals"));
             return;
         }
         if (hypeTrainManager.startHypeTrain(true)) {
             sender.sendMessage(configManager.getPrefixedMessage("force-start-success"));
         } else {
-            sender.sendMessage(configManager.getPrefixedMessage("prefix") + ChatColor.RED + "Le Hype Train n'a pas pu démarrer. Vérifiez la console.");
+            sender.sendMessage(configManager.getPrefixedMessage("start-failed"));
         }
     }
 
@@ -108,50 +108,60 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleStatusCommand(CommandSender sender) {
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6--- &eStatut SHHypeVotes &6---"));
+        sender.sendMessage(text("status-header"));
         if (hypeTrainManager.isActive()) {
-            sender.sendMessage(ChatColor.GREEN + "Hype Train: ACTIF");
-            sender.sendMessage(ChatColor.YELLOW + "  Votes: " + ChatColor.WHITE + hypeTrainManager.getCurrentVotes());
+            sender.sendMessage(text("status-active"));
+            sender.sendMessage(text("status-votes", "%votes%", String.valueOf(hypeTrainManager.getCurrentVotes())));
             long remainingSeconds = (hypeTrainManager.getEndTimeMillis() - System.currentTimeMillis()) / 1000;
-            sender.sendMessage(ChatColor.YELLOW + "  Temps restant: " + ChatColor.WHITE + hypeTrainManager.formatTime(remainingSeconds, configManager.countdownFormat));
+            sender.sendMessage(text("status-time-left", "%time%", hypeTrainManager.formatTime(remainingSeconds, configManager.countdownFormat)));
 
             Goal currentGoal = hypeTrainManager.getCurrentHighestGoalReached();
             if (currentGoal != null)
-                sender.sendMessage(ChatColor.YELLOW + "  Dernier palier atteint: " + ChatColor.translateAlternateColorCodes('&', currentGoal.displayName()) + ChatColor.GRAY + " (" + currentGoal.threshold() + ")");
-            else sender.sendMessage(ChatColor.YELLOW + "  Dernier palier atteint: " + ChatColor.WHITE + "Aucun");
+                sender.sendMessage(text("status-current-goal", "%goal%", coloredName(currentGoal), "%threshold%", String.valueOf(currentGoal.threshold())));
+            else sender.sendMessage(text("status-current-goal-none"));
 
             Goal nextGoal = hypeTrainManager.getNextGoalToAnnounce();
             if (nextGoal != null)
-                sender.sendMessage(ChatColor.YELLOW + "  Prochain palier: " + ChatColor.translateAlternateColorCodes('&', nextGoal.displayName()) + ChatColor.GRAY + " (" + nextGoal.threshold() + ")");
+                sender.sendMessage(text("status-next-goal", "%goal%", coloredName(nextGoal), "%threshold%", String.valueOf(nextGoal.threshold())));
             else if (currentGoal != null)
-                sender.sendMessage(ChatColor.YELLOW + "  Prochain palier: " + ChatColor.GREEN + "Tous les paliers atteints !");
+                sender.sendMessage(text("status-all-goals-reached"));
             else
-                sender.sendMessage(ChatColor.YELLOW + "  Prochain palier: " + ChatColor.RED + (configManager.getGoals().isEmpty() ? "Aucun palier configuré" : "Erreur"));
+                sender.sendMessage(text(configManager.getGoals().isEmpty() ? "status-no-goal-configured" : "status-next-goal-error"));
 
-            sender.sendMessage(ChatColor.YELLOW + "  Votants uniques: " + ChatColor.WHITE + hypeTrainManager.getVotersInCurrentHype().size());
+            sender.sendMessage(text("status-voters", "%voters%", String.valueOf(hypeTrainManager.getVotersInCurrentHype().size())));
         } else {
-            sender.sendMessage(ChatColor.RED + "Hype Train: INACTIF");
+            sender.sendMessage(text("status-inactive"));
             long nextAttemptTime = hypeTrainManager.getNextRandomHypeTaskTime();
             if (nextAttemptTime > System.currentTimeMillis()) {
                 long secondsToNextAttempt = (nextAttemptTime - System.currentTimeMillis()) / 1000;
-                sender.sendMessage(ChatColor.YELLOW + "  Prochaine tentative aléatoire dans: " + ChatColor.WHITE + hypeTrainManager.formatTime(secondsToNextAttempt, "HH'h'mm'm'ss's'"));
+                sender.sendMessage(text("status-next-attempt", "%time%", hypeTrainManager.formatTime(secondsToNextAttempt, "HH'h'mm'm'ss's'")));
             } else if (nextAttemptTime > 0) {
-                sender.sendMessage(ChatColor.YELLOW + "  Tentative de lancement aléatoire: " + ChatColor.WHITE + "Imminente ou en cours...");
+                sender.sendMessage(text("status-attempt-imminent"));
             } else {
-                sender.sendMessage(ChatColor.YELLOW + "  Prochaine tentative aléatoire: " + ChatColor.WHITE + "Non planifiée.");
+                sender.sendMessage(text("status-attempt-unplanned"));
             }
         }
-        sender.sendMessage(ChatColor.YELLOW + "Paliers configurés: " + ChatColor.WHITE + configManager.getGoals().size());
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', "&6-------------------------"));
+        sender.sendMessage(text("status-goals-count", "%count%", String.valueOf(configManager.getGoals().size())));
+        sender.sendMessage(text("status-footer"));
     }
 
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(configManager.getPrefixedMessage("prefix") + ChatColor.AQUA + "Commandes disponibles:"); // Utilise le préfixe configuré
-        sender.sendMessage(ChatColor.GOLD + "/shh start " + ChatColor.GRAY + "- Démarre de force un Hype Train.");
-        sender.sendMessage(ChatColor.GOLD + "/shh stop " + ChatColor.GRAY + "- Arrête de force le Hype Train en cours.");
-        sender.sendMessage(ChatColor.GOLD + "/shh end " + ChatColor.GRAY + "- Termine le Hype en distribuant les récompenses atteintes.");
-        sender.sendMessage(ChatColor.GOLD + "/shh reload " + ChatColor.GRAY + "- Recharge la configuration du plugin.");
-        sender.sendMessage(ChatColor.GOLD + "/shh status " + ChatColor.GRAY + "- Affiche le statut actuel du Hype Train.");
+        for (String line : configManager.getMessageList("help")) {
+            sender.sendMessage(line);
+        }
+    }
+
+    /** Message de messages.yml dont les placeholders sont remplacés (paires placeholder, valeur). */
+    private String text(String key, String... replacements) {
+        String message = configManager.getMessage(key);
+        for (int i = 0; i + 1 < replacements.length; i += 2) {
+            message = message.replace(replacements[i], replacements[i + 1]);
+        }
+        return message;
+    }
+
+    private String coloredName(Goal goal) {
+        return ChatColor.translateAlternateColorCodes('&', goal.displayName());
     }
 
     @Nullable

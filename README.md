@@ -21,6 +21,7 @@ Utilisé sur : **Opale**.
 ## Dépendances
 
 - Obligatoires : `Votifier`
+- Optionnelle : `SHLogs`
 
 ## Commandes
 
@@ -43,6 +44,8 @@ plugins/SHHypeVotes/
 ├── <a href="src/main/resources/config.yml">config.yml</a>
 └── <a href="src/main/resources/messages.yml">messages.yml</a>
 </pre>
+
+Le résumé de chaque Hype Train terminé est écrit dans le fichier `hype` du dossier `SHHypeVotes` de SHLogs (`plugins/SHLogs/`), si `logging.enabled` est actif. Sans SHLogs, il passe dans la console.
 
 ## Compilation
 

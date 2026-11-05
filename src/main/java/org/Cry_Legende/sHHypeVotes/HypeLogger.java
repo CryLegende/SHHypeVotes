@@ -4,31 +4,23 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 public class HypeLogger {
 
+    private static final String LOG_FILE = "hype";
+
     private final SHHypeVotes plugin;
-    private final File logsDir;
 
     public HypeLogger(SHHypeVotes plugin) {
         this.plugin = plugin;
-        this.logsDir = new File(plugin.getDataFolder(), "logs");
-        if (!logsDir.exists()) {
-            logsDir.mkdirs();
-        }
     }
 
     /**
-     * Enregistre un résumé complet de la session Hype Train terminée.
+     * Enregistre dans SHLogs le résumé de la session Hype Train terminée.
      *
      * @param totalVotes         Nombre total de votes reçus
      * @param uniqueVoters       Set des UUID des votants uniques
@@ -45,79 +37,41 @@ public class HypeLogger {
                                 boolean rewardsDistributed, int playersOnlineAtEnd, boolean forcedStop) {
         if (!plugin.getConfigManager().loggingEnabled) return;
 
-        SimpleDateFormat fileDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        SimpleDateFormat timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Date now = new Date();
+        String reached = highestGoalReached != null
+            ? plainName(highestGoalReached) + " (" + highestGoalReached.key() + ", seuil: " + highestGoalReached.threshold() + ")"
+            : "AUCUN";
+        long actualSeconds = actualDurationMs / 1000;
 
-        String fileName = "hype-" + fileDateFormat.format(now) + ".log";
-        File logFile = new File(logsDir, fileName);
+        ActionLog.write(plugin, LOG_FILE, "Hype Train terminé"
+            + " | Statut: " + (forcedStop ? "ARRET FORCE" : "TERMINE NATURELLEMENT")
+            + " | Récompenses distribuées: " + (rewardsDistributed ? "OUI" : "NON")
+            + " | Votes totaux: " + totalVotes
+            + " | Votants uniques: " + uniqueVoters.size()
+            + " | Palier atteint: " + reached
+            + " | Durée de base configurée: " + formatDuration(durationSeconds)
+            + " | Durée réelle (avec extensions): " + formatDuration(actualSeconds)
+            + " | Joueurs en ligne (fin): " + playersOnlineAtEnd);
 
-        try (PrintWriter writer = new PrintWriter(new FileWriter(logFile, true))) {
-            writer.println("========================================");
-            writer.println("  HYPE TRAIN - " + timestampFormat.format(now));
-            writer.println("========================================");
-            writer.println("Statut: " + (forcedStop ? "ARRET FORCE" : "TERMINE NATURELLEMENT"));
-            writer.println("Récompenses distribuées: " + (rewardsDistributed ? "OUI" : "NON"));
-            writer.println();
-
-            // Statistiques de votes
-            writer.println("--- VOTES ---");
-            writer.println("Votes totaux: " + totalVotes);
-            writer.println("Votants uniques: " + uniqueVoters.size());
-            writer.println();
-
-            // Palier atteint
-            writer.println("--- PALIERS ---");
-            if (highestGoalReached != null) {
-                writer.println("Palier atteint: " + ChatColor.stripColor(
-                    org.bukkit.ChatColor.translateAlternateColorCodes('&', highestGoalReached.displayName()))
-                    + " (" + highestGoalReached.key() + ", seuil: " + highestGoalReached.threshold() + ")");
-            } else {
-                writer.println("Palier atteint: AUCUN");
-            }
-
-            // Progression dans les paliers
-            writer.println("Progression:");
-            for (Goal goal : allGoals) {
-                boolean reached = totalVotes >= goal.threshold();
-                String status = reached ? "[OK]" : "[  ]";
-                String goalName = ChatColor.stripColor(
-                    org.bukkit.ChatColor.translateAlternateColorCodes('&', goal.displayName()));
-                writer.println("  " + status + " " + goal.key() + " - " + goalName
-                    + " (seuil: " + goal.threshold() + ")");
-            }
-            writer.println();
-
-            // Durée
-            writer.println("--- DUREE ---");
-            long actualSeconds = actualDurationMs / 1000;
-            writer.println("Durée de base configurée: " + formatDuration(durationSeconds));
-            writer.println("Durée réelle (avec extensions): " + formatDuration(actualSeconds));
-            writer.println();
-
-            // Joueurs
-            writer.println("--- SERVEUR ---");
-            writer.println("Joueurs en ligne (fin): " + playersOnlineAtEnd);
-            writer.println();
-
-            // Liste des votants
-            if (plugin.getConfigManager().loggingIncludeVoterList && !uniqueVoters.isEmpty()) {
-                writer.println("--- VOTANTS ---");
-                for (UUID uuid : uniqueVoters) {
-                    OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
-                    String name = op.getName() != null ? op.getName() : uuid.toString();
-                    writer.println("  - " + name);
-                }
-                writer.println();
-            }
-
-            writer.println("========================================");
-            writer.println();
-
-            plugin.logInfo("Log Hype Train écrit dans " + logFile.getName());
-        } catch (IOException e) {
-            plugin.logSevere("Impossible d'écrire le log Hype Train: " + e.getMessage());
+        List<String> progression = new ArrayList<>();
+        for (Goal goal : allGoals) {
+            boolean reachedGoal = totalVotes >= goal.threshold();
+            progression.add((reachedGoal ? "[OK]" : "[  ]") + " " + goal.key() + " - " + plainName(goal)
+                + " (seuil: " + goal.threshold() + ")");
         }
+        ActionLog.write(plugin, LOG_FILE, "Hype Train progression: " + String.join(", ", progression));
+
+        if (plugin.getConfigManager().loggingIncludeVoterList && !uniqueVoters.isEmpty()) {
+            List<String> names = new ArrayList<>();
+            for (UUID uuid : uniqueVoters) {
+                OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
+                names.add(op.getName() != null ? op.getName() : uuid.toString());
+            }
+            ActionLog.write(plugin, LOG_FILE, "Hype Train votants: " + String.join(", ", names));
+        }
+    }
+
+    private String plainName(Goal goal) {
+        return ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', goal.displayName()));
     }
 
     private String formatDuration(long totalSeconds) {

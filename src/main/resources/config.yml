@@ -1,4 +1,24 @@
-# Configuration générale de SHHypeVotes
+# ----------------------------------------------------------------#
+#                  Configuration de SHHypeVotes                   #
+# ----------------------------------------------------------------#
+#
+# Hype Train des votes : chaque vote reçu (Votifier) pendant un Hype Train fait monter un compteur de votes.
+# Chaque palier atteint peut ajouter du temps au Hype, et à la fin les commandes du plus haut palier atteint
+# sont lancées pour chaque votant. Un Hype Train se lance aussi tout seul, au hasard, quand assez de joueurs
+# sont en ligne.
+#
+# Commandes (alias /hypevotes, /hv, /shhvote) :
+#   /shh start    Démarre de force un Hype Train.
+#   /shh stop     Arrête de force le Hype Train en cours, sans récompenses.
+#   /shh end      Termine le Hype Train en cours en distribuant les récompenses atteintes.
+#   /shh reload   Recharge config.yml et messages.yml.
+#   /shh status   Affiche l'état du Hype Train.
+#
+# Permissions :
+#   shh.admin   Utiliser /shh (op par défaut).
+#
+# Les textes sont dans messages.yml. Le résumé de chaque Hype Train terminé est écrit dans le fichier hype de SHLogs.
+
 general:
   # Nombre minimum de joueurs en ligne pour tenter de lancer un Hype Train automatiquement.
   min-players-online-for-random-start: 25
@@ -13,6 +33,8 @@ general:
   # Format du countdown pour %time_remaining% et %duration%.
   # Exemples: "mm:ss", "HH:mm:ss", "M 'minutes' s 'secondes'"
   countdown-format: "HH'h'mm'm'ss's'"
+  # Ne compter que les votes des joueurs en ligne au moment du vote.
+  only-count-online-player-votes: false
 
 # Configuration des sons (noms de sons de Minecraft, ex: ENTITY_PLAYER_LEVELUP, BLOCK_NOTE_BLOCK_PLING)
 # Liste des sons: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Sound.html
@@ -29,12 +51,19 @@ sounds:
     pitch: 1.2
   hype-end:
     enabled: true
-    sound: "ENTITY_FIREWORK_ROCKET_LARGE_BLAST" # Un son plus final
+    sound: "ENTITY_FIREWORK_ROCKET_LARGE_BLAST"
     volume: 1.0
     pitch: 0.8
 
 # Configuration des paliers du Hype Train
 # Les paliers DOIVENT être listés par ordre croissant de 'threshold'.
+# Chaque palier a :
+#   displayName             Nom du palier, avec codes couleur &.
+#   threshold               Nombre de votes à atteindre.
+#   time-extension-seconds  Secondes ajoutées au Hype quand le palier est atteint.
+#   bossbar-theme-color     Couleur de la barre de boss à partir de ce palier.
+#   commands                Commandes console lancées pour chaque votant à la fin du Hype, si c'est le plus haut
+#                           palier atteint. %player% est le pseudo du votant.
 goals:
   goal1:
     displayName: "&eLuckyBlock Jaune x1"
@@ -142,3 +171,10 @@ bossbar:
   style: "SOLID"
   # Couleur par défaut: BLUE, GREEN, PINK, PURPLE, RED, WHITE, YELLOW
   color: "GREEN"
+
+# Journal de fin de Hype Train, écrit dans le fichier hype de SHLogs.
+logging:
+  # Écrire le résumé de chaque Hype Train terminé.
+  enabled: true
+  # Ajouter la liste des votants au résumé.
+  include-voter-list: true
