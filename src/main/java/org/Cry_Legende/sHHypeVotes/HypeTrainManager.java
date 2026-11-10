@@ -17,8 +17,10 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
@@ -43,9 +45,15 @@ public class HypeTrainManager {
     private Goal currentHighestGoalReached;
     private Goal nextGoalToAnnounce;
     private Set<UUID> votersInCurrentHype;
+    // Pseudo de chaque votant, pour lancer ses récompenses même s'il n'est jamais venu sur ce serveur
+    private final Map<UUID, String> voterNames = new HashMap<>();
     private long startTimeMillis;
+    // Mode réseau : un seul serveur mène le Hype Train, les autres l'affichent (null sur un serveur seul)
+    private HypeNetwork network;
+    // Mode réseau, serveur qui ne mène pas : nombre de votants annoncé par le meneur
+    private int mirrorVoterCount;
 
-    public HypeTrainManager(SHHypeVotes plugin) {
+    public HypeTrainManager(SHHypeVotes plugin, boolean networked) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.isActive = false;
@@ -53,12 +61,41 @@ public class HypeTrainManager {
         this.stateStore = new HypeStateStore(JavaPlugin.getPlugin(SHVotesReward.class).database());
         stateStore.createTables();
         stateStore.saveGoals(configManager.getGoals());
-        // Un arrêt brutal laisse le Hype actif en base : il repart à zéro avec le serveur.
-        stateStore.save(false, 0, 0);
+        if (networked) {
+            // Mode réseau : le Hype en cours reste en base, le serveur qui mène le reprend
+            stateStore.createVotersTable();
+        } else {
+            // Un arrêt brutal laisse le Hype actif en base : il repart à zéro avec le serveur.
+            stateStore.save(false, 0, 0);
+        }
+    }
+
+    void setNetwork(HypeNetwork network) {
+        this.network = network;
+    }
+
+    HypeStateStore stateStore() {
+        return stateStore;
+    }
+
+    /** Vrai si ce serveur mène le Hype Train : toujours sur un serveur seul. */
+    private boolean leads() {
+        return network == null || network.isOwner();
+    }
+
+    /** Annonce à tous les joueurs de ce serveur, et, si ce serveur mène le Hype du réseau, à ceux des autres. */
+    private void broadcast(String line) {
+        Bukkit.broadcastMessage(line);
+        if (network != null && network.isOwner()) {
+            network.line(line);
+        }
     }
 
     private void playSoundToAll(ConfigManager.SoundEffect soundEffect) {
         if (soundEffect == null || !soundEffect.enabled) return;
+        if (network != null && network.isOwner()) {
+            network.sound(soundEffect.soundName, soundEffect.volume, soundEffect.pitch);
+        }
         Sound sound = sound(soundEffect.soundName);
         if (sound == null) {
             plugin.logWarn("Son invalide configuré: " + soundEffect.soundName);
@@ -97,11 +134,15 @@ public class HypeTrainManager {
         isActive = true;
         currentVotes = 0;
         votersInCurrentHype.clear();
+        voterNames.clear();
         currentHighestGoalReached = null;
         nextGoalToAnnounce = findNextGoalInternal(0);
 
         this.startTimeMillis = System.currentTimeMillis();
         this.endTimeMillis = this.startTimeMillis + (configManager.hypeDurationSeconds * 1000L);
+        if (network != null) {
+            stateStore.clearVoters();
+        }
         stateStore.save(true, currentVotes, endTimeMillis);
 
         if (configManager.bossBarEnabled) {
@@ -110,7 +151,17 @@ public class HypeTrainManager {
 
         announceHypeStarted();
         playSoundToAll(configManager.soundHypeStart);
+        publishState();
 
+        startTicker();
+
+        cancelRandomHypeTask();
+        nextRandomHypeAttemptTimeMillis = 0;
+        return true;
+    }
+
+    /** Tâche qui fait avancer la barre de boss et termine le Hype à l'heure. */
+    private void startTicker() {
         this.hypeTrainTask = new BukkitRunnable() {
             @Override
             public void run() {
@@ -129,10 +180,6 @@ public class HypeTrainManager {
                 }
             }
         }.runTaskTimer(plugin, 0L, configManager.bossBarUpdateIntervalTicks);
-
-        cancelRandomHypeTask();
-        nextRandomHypeAttemptTimeMillis = 0;
-        return true;
     }
 
     public void stopCurrentHypeTrain(boolean distributeRewards, boolean forcedByCommandOrDisable) {
@@ -151,6 +198,9 @@ public class HypeTrainManager {
             bossBar.removeAll();
             bossBar = null;
         }
+        if (network != null && network.isOwner()) {
+            network.barOff();
+        }
 
         boolean rewardsActuallyGiven = false;
         if (distributeRewards && currentHighestGoalReached != null && !votersInCurrentHype.isEmpty()) {
@@ -164,8 +214,11 @@ public class HypeTrainManager {
             plugin.logInfo("Votants participant (" + votersInCurrentHype.size() + "):");
 
             for (UUID voterUUID : votersInCurrentHype) {
-                OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(voterUUID);
-                String playerName = offlinePlayer.getName();
+                String playerName = voterNames.get(voterUUID);
+                if (playerName == null) {
+                    OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(voterUUID);
+                    playerName = offlinePlayer.getName();
+                }
 
                 if (playerName == null) {
                     plugin.logWarn("Impossible d'obtenir le nom du joueur pour l'UUID: " + voterUUID + ". Récompenses pour ce joueur ignorées.");
@@ -202,32 +255,57 @@ public class HypeTrainManager {
         }
 
         votersInCurrentHype.clear();
+        voterNames.clear();
         currentVotes = 0;
         currentHighestGoalReached = null;
         nextGoalToAnnounce = null;
+        if (network != null) {
+            stateStore.clearVoters();
+        }
         stateStore.save(false, 0, 0);
+        publishState();
 
         scheduleRandomHypeTrainAttempt();
     }
 
     public void handleVote(Player voter) {
-        String playerNameForLog = (voter != null) ? voter.getName() : "Anonyme";
+        handleVote(voter != null ? voter.getUniqueId() : null, voter != null ? voter.getName() : null, voter != null);
+    }
+
+    /**
+     * Vote compté par le serveur qui mène le Hype.
+     *
+     * @param uuid   votant, ou null s'il n'est connecté nulle part
+     * @param name   pseudo du votant
+     * @param online vrai si le votant est connecté (sur ce serveur ou, en mode réseau, sur un autre)
+     */
+    public void handleVote(UUID uuid, String name, boolean online) {
+        String playerNameForLog = online && name != null ? name : "Anonyme";
 
         if (!isActive) {
             plugin.logInfo("Vote de " + playerNameForLog + " reçu hors Hype Train.");
             return;
         }
 
-        if (configManager.onlyCountOnlinePlayerVotes && voter == null) {
+        if (configManager.onlyCountOnlinePlayerVotes && !online) {
             plugin.logInfo("Vote de " + playerNameForLog + " ignoré (joueur hors-ligne, only-count-online-player-votes activé).");
             return;
         }
 
         currentVotes++;
-        if (voter != null) {
-            votersInCurrentHype.add(voter.getUniqueId());
+        if (online && uuid != null) {
+            if (votersInCurrentHype.add(uuid) && network != null) {
+                stateStore.addVoter(uuid, name);
+            }
+            voterNames.put(uuid, name);
             if (!configManager.getMessage("vote-counted-in-hype").isEmpty()) { // Check si le message n'est pas vide
-                voter.sendMessage(formatMessage(configManager.getPrefixedMessage("vote-counted-in-hype")));
+                String text = formatMessage(configManager.getPrefixedMessage("vote-counted-in-hype"));
+                Player voter = Bukkit.getPlayer(uuid);
+                if (voter != null) {
+                    voter.sendMessage(text);
+                } else if (network != null) {
+                    network.message(uuid, text);
+                }
             }
         }
         plugin.logInfo("Vote de " + playerNameForLog + " compté. Total: " + currentVotes);
@@ -237,6 +315,151 @@ public class HypeTrainManager {
         if (configManager.bossBarEnabled && bossBar != null) {
             updateBossBar();
         }
+        publishState();
+    }
+
+    /** Mode réseau : le meneur annonce l'état du Hype aux autres serveurs (commande /shh status). */
+    private void publishState() {
+        if (network != null && network.isOwner()) {
+            network.state(isActive, currentVotes, endTimeMillis,
+                currentHighestGoalReached != null ? currentHighestGoalReached.threshold() : -1, votersInCurrentHype.size());
+        }
+    }
+
+    // ------------------------------------------------------------------ mode réseau
+
+    /**
+     * Ce serveur devient meneur : il reprend le Hype gardé en base. Un Hype dont l'heure de fin est passée (serveurs
+     * arrêtés entre-temps) est terminé tout de suite, avec ses récompenses.
+     */
+    void resumeFrom(HypeStateStore.Saved saved) {
+        if (isActive) {
+            return;
+        }
+        if (!saved.active()) {
+            scheduleRandomHypeTrainAttempt();
+            return;
+        }
+        isActive = true;
+        currentVotes = saved.votes();
+        endTimeMillis = saved.endsAt();
+        startTimeMillis = System.currentTimeMillis();
+        votersInCurrentHype.clear();
+        voterNames.clear();
+        votersInCurrentHype.addAll(saved.voters().keySet());
+        voterNames.putAll(saved.voters());
+        currentHighestGoalReached = null;
+        for (Goal goal : configManager.getGoals()) {
+            if (currentVotes >= goal.threshold()) {
+                currentHighestGoalReached = goal;
+            } else {
+                break;
+            }
+        }
+        nextGoalToAnnounce = findNextGoalInternal(currentHighestGoalReached != null ? currentHighestGoalReached.threshold() : 0);
+        cancelRandomHypeTask();
+        nextRandomHypeAttemptTimeMillis = 0;
+        plugin.logInfo("Hype Train repris : " + currentVotes + " vote(s), " + votersInCurrentHype.size() + " votant(s).");
+        if (endTimeMillis <= System.currentTimeMillis()) {
+            stopCurrentHypeTrain(true, false);
+            return;
+        }
+        if (configManager.bossBarEnabled) {
+            createBossBar();
+        }
+        publishState();
+        startTicker();
+    }
+
+    /** Ce serveur cesse de mener : le Hype s'arrête ici sans annonce ni récompense, il continue sur le nouveau meneur. */
+    void silentStop() {
+        cancelRandomHypeTask();
+        nextRandomHypeAttemptTimeMillis = 0;
+        if (hypeTrainTask != null && !hypeTrainTask.isCancelled()) {
+            hypeTrainTask.cancel();
+        }
+        hypeTrainTask = null;
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar = null;
+        }
+        isActive = false;
+        currentVotes = 0;
+        votersInCurrentHype.clear();
+        voterNames.clear();
+        currentHighestGoalReached = null;
+        nextGoalToAnnounce = null;
+    }
+
+    /** Ce serveur devient meneur : l'affichage reçu de l'ancien meneur est effacé avant la reprise. */
+    void clearMirror() {
+        silentStop();
+        mirrorVoterCount = 0;
+    }
+
+    /** Serveur qui ne mène pas : état annoncé par le meneur, pour /shh status. */
+    void mirrorState(boolean active, int votes, long endsAt, int goalThreshold, int voters) {
+        isActive = active;
+        currentVotes = votes;
+        endTimeMillis = endsAt;
+        mirrorVoterCount = voters;
+        currentHighestGoalReached = null;
+        for (Goal goal : configManager.getGoals()) {
+            if (goal.threshold() == goalThreshold) {
+                currentHighestGoalReached = goal;
+            }
+        }
+        nextGoalToAnnounce = findNextGoalInternal(currentHighestGoalReached != null ? currentHighestGoalReached.threshold() : 0);
+        if (!active) {
+            mirrorBarOff();
+        }
+    }
+
+    /** Serveur qui ne mène pas : barre de boss du meneur, recopiée pour les joueurs d'ici. */
+    void mirrorBar(String title, double progress, String color, String style) {
+        if (!configManager.bossBarEnabled) {
+            return;
+        }
+        BarColor barColor;
+        BarStyle barStyle;
+        try {
+            barColor = BarColor.valueOf(color);
+            barStyle = BarStyle.valueOf(style);
+        } catch (IllegalArgumentException e) {
+            barColor = BarColor.GREEN;
+            barStyle = BarStyle.SOLID;
+        }
+        if (bossBar == null) {
+            bossBar = Bukkit.createBossBar(title, barColor, barStyle);
+            Bukkit.getOnlinePlayers().forEach(bossBar::addPlayer);
+        }
+        bossBar.setTitle(title);
+        bossBar.setColor(barColor);
+        bossBar.setStyle(barStyle);
+        bossBar.setProgress(Math.max(0.0, Math.min(1.0, progress)));
+    }
+
+    void mirrorBarOff() {
+        if (bossBar != null) {
+            bossBar.removeAll();
+            bossBar = null;
+        }
+    }
+
+    /** Son joué par le meneur, joué ici pour les joueurs de ce serveur. */
+    void playSoundLocal(String name, float volume, float pitch) {
+        Sound sound = sound(name);
+        if (sound == null) {
+            return;
+        }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.playSound(player.getLocation(), sound, volume, pitch);
+        }
+    }
+
+    /** Votants du Hype en cours : ceux de ce serveur s'il mène, sinon le nombre annoncé par le meneur. */
+    public int getVoterCount() {
+        return leads() ? votersInCurrentHype.size() : mirrorVoterCount;
     }
 
     private void checkGoals() {
@@ -333,13 +556,16 @@ public class HypeTrainManager {
         bossBar.setTitle(formatMessage(configManager.bossBarFormat, displayGoalForBar, findNextGoalInternal(displayGoalForBar.threshold()), null, 0));
         double progress = displayGoalForBar.threshold() > 0 ? Math.min(1.0, (double) currentVotes / displayGoalForBar.threshold()) : (currentVotes > 0 ? 1.0 : 0.0);
         bossBar.setProgress(progress);
+        if (network != null && network.isOwner()) {
+            network.bar(bossBar.getTitle(), progress, bossBar.getColor().name(), bossBar.getStyle().name());
+        }
     }
 
     private void announceHypeStarted() {
         Goal firstGoal = nextGoalToAnnounce != null ? nextGoalToAnnounce : (!configManager.getGoals().isEmpty() ? configManager.getGoals().get(0) : null);
         List<String> messages = configManager.getMessageList("hype-started");
         for (String line : messages) {
-            Bukkit.broadcastMessage(formatMessage(line, firstGoal, findNextGoalInternal(firstGoal != null ? firstGoal.threshold() : 0), null, 0));
+            broadcast(formatMessage(line, firstGoal, findNextGoalInternal(firstGoal != null ? firstGoal.threshold() : 0), null, 0));
         }
     }
 
@@ -382,7 +608,7 @@ public class HypeTrainManager {
             }
 
             if (printCurrentLine && !trimmedLine.isEmpty()) {
-                Bukkit.broadcastMessage(formatMessage(line, reachedGoal, nextUpcomingGoal, null, timeAddedSeconds));
+                broadcast(formatMessage(line, reachedGoal, nextUpcomingGoal, null, timeAddedSeconds));
             }
         }
     }
@@ -420,13 +646,18 @@ public class HypeTrainManager {
             }
 
             if (printCurrentLine && !trimmedLine.isEmpty()) {
-                Bukkit.broadcastMessage(formatMessage(line, null, null, currentHighestGoalReached, 0));
+                broadcast(formatMessage(line, null, null, currentHighestGoalReached, 0));
             }
         }
     }
 
     public void scheduleRandomHypeTrainAttempt() {
         cancelRandomHypeTask();
+        // Mode réseau : seul le serveur qui mène le Hype en lance un au hasard
+        if (!leads()) {
+            nextRandomHypeAttemptTimeMillis = 0;
+            return;
+        }
         // Arrêt du Hype Train pendant onDisable : le plugin est déjà désactivé, aucune tâche ne peut être planifiée
         if (!plugin.isEnabled()) {
             nextRandomHypeAttemptTimeMillis = 0;
@@ -450,14 +681,18 @@ public class HypeTrainManager {
                     scheduleRandomHypeTrainAttempt();
                     return;
                 }
-                if (Bukkit.getOnlinePlayers().size() >= configManager.minPlayersOnlineForRandomStart) {
-                    plugin.logInfo("Conditions remplies pour un Hype Train aléatoire (" + Bukkit.getOnlinePlayers().size() + "/" + configManager.minPlayersOnlineForRandomStart + "), tentative...");
+                int online = network != null ? network.onlineCount() : Bukkit.getOnlinePlayers().size();
+                if (!leads()) {
+                    return;
+                }
+                if (online >= configManager.minPlayersOnlineForRandomStart) {
+                    plugin.logInfo("Conditions remplies pour un Hype Train aléatoire (" + online + "/" + configManager.minPlayersOnlineForRandomStart + "), tentative...");
                     if (!startHypeTrain(false)) {
                         plugin.logWarn("Échec du démarrage du Hype Train aléatoire. Reprogrammation...");
                         scheduleRandomHypeTrainAttempt();
                     }
                 } else {
-                    plugin.logInfo("Pas assez de joueurs (" + Bukkit.getOnlinePlayers().size() + "/" + configManager.minPlayersOnlineForRandomStart + ") pour un Hype aléatoire. Reprogrammation...");
+                    plugin.logInfo("Pas assez de joueurs (" + online + "/" + configManager.minPlayersOnlineForRandomStart + ") pour un Hype aléatoire. Reprogrammation...");
                     scheduleRandomHypeTrainAttempt();
                 }
             }

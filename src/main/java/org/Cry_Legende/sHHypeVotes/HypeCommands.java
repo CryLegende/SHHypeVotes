@@ -66,6 +66,17 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    /** Mode réseau, serveur qui ne mène pas le Hype : la commande part au meneur. */
+    private boolean forwarded(CommandSender sender, String action) {
+        HypeNetwork network = plugin.getNetwork();
+        if (network == null || network.isOwner()) {
+            return false;
+        }
+        network.command(action);
+        sender.sendMessage(configManager.getPrefixedMessage("network-forwarded"));
+        return true;
+    }
+
     private void handleStartCommand(CommandSender sender) {
         if (hypeTrainManager.isActive()) {
             sender.sendMessage(configManager.getPrefixedMessage("hype-already-active"));
@@ -73,6 +84,9 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
         }
         if (configManager.getGoals().isEmpty()) {
             sender.sendMessage(configManager.getPrefixedMessage("start-no-goals"));
+            return;
+        }
+        if (forwarded(sender, "start")) {
             return;
         }
         if (hypeTrainManager.startHypeTrain(true)) {
@@ -87,6 +101,9 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(configManager.getPrefixedMessage("hype-not-active"));
             return;
         }
+        if (forwarded(sender, "stop")) {
+            return;
+        }
         hypeTrainManager.stopCurrentHypeTrain(false, true);
         sender.sendMessage(configManager.getPrefixedMessage("force-stop-success"));
     }
@@ -94,6 +111,9 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
     private void handleEndCommand(CommandSender sender) {
         if (!hypeTrainManager.isActive()) {
             sender.sendMessage(configManager.getPrefixedMessage("hype-not-active"));
+            return;
+        }
+        if (forwarded(sender, "end")) {
             return;
         }
         hypeTrainManager.stopCurrentHypeTrain(true, true);
@@ -128,7 +148,7 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             else
                 sender.sendMessage(text(configManager.getGoals().isEmpty() ? "status-no-goal-configured" : "status-next-goal-error"));
 
-            sender.sendMessage(text("status-voters", "%voters%", String.valueOf(hypeTrainManager.getVotersInCurrentHype().size())));
+            sender.sendMessage(text("status-voters", "%voters%", String.valueOf(hypeTrainManager.getVoterCount())));
         } else {
             sender.sendMessage(text("status-inactive"));
             long nextAttemptTime = hypeTrainManager.getNextRandomHypeTaskTime();

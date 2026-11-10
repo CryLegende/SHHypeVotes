@@ -16,6 +16,7 @@ hype-not-active: "&7&l« &c&lSH &8&l» &7Il n'y a pas de Hype en cours."
 force-start-success: "&7&l« &a&lSH &8&l» &7Hype démarré de force !"
 force-stop-success: "&7&l« &a&lSH &8&l» &7Hype arrêté de force."
 reload-success: "&7&l« &a&lSH &8&l» &7Configuration et messages de SHHypeVotes rechargés."
+network-forwarded: "&7&l« &e&lSH &8&l» &7Demande transmise au serveur qui mène le &eHype Train&7."
 
 # Placeholders pour les messages suivants:
 # %current_votes%, %total_votes_for_hype% = votes actuels du hype

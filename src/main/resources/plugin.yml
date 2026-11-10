@@ -5,7 +5,8 @@ api-version: '1.20'
 author: Cry_Legende
 description: Un système de Hype Train pour les votes avec récompenses par paliers.
 depend: [SHVotesReward]
-softdepend: [SHLogs]
+# SHNetwork est facultatif : sans lui, chaque serveur a son propre Hype Train comme avant.
+softdepend: [SHLogs, SHNetwork]
 
 commands:
   shh:

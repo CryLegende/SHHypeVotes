@@ -19,6 +19,18 @@
 #
 # Les textes sont dans messages.yml. Le résumé de chaque Hype Train terminé est écrit dans le fichier hype de SHLogs.
 
+# Mode réseau : avec SHNetwork, un seul Hype Train pour tous les serveurs. Un seul serveur (le meneur) le fait
+# tourner : départs au hasard (joueurs en ligne comptés sur tout le réseau), votes, paliers, fin et récompenses.
+# Les autres serveurs lui transmettent les votes qu'ils reçoivent et affichent ses annonces, ses sons et sa barre
+# de boss. Un votant connecté sur n'importe quel serveur compte comme en ligne. Le Hype en cours et ses votants sont
+# gardés en base : si le meneur s'arrête, le serveur qui prend sa place le reprend (sans rien annoncer).
+# /shh start, stop et end lancés sur un autre serveur sont transmis au meneur.
+# Sans SHNetwork, cette section ne sert pas.
+reseau:
+  actif: true
+  # Canal du bus SHNetwork
+  canal: shhypevotes
+
 general:
   # Nombre minimum de joueurs en ligne pour tenter de lancer un Hype Train automatiquement.
   min-players-online-for-random-start: 25

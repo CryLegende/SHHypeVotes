@@ -27,6 +27,12 @@ public class VoteListener implements Listener {
         }
 
         Player player = Bukkit.getPlayerExact(playerName);
+        HypeNetwork network = plugin.getNetwork();
+        if (network != null) {
+            // Mode réseau : compté par le serveur qui mène le Hype, joueur en ligne sur n'importe quel serveur
+            network.vote(playerName, player);
+            return;
+        }
         hypeTrainManager.handleVote(player);
     }
 }

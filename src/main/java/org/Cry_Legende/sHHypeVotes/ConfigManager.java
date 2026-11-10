@@ -31,6 +31,9 @@ public class ConfigManager {
     public int hypeDurationSeconds;
     public String countdownFormat;
     public boolean onlyCountOnlinePlayerVotes;
+    // Mode réseau (SHNetwork)
+    public boolean networkEnabled;
+    public String networkChannel;
 
     // Logging settings
     public boolean loggingEnabled;
@@ -130,6 +133,8 @@ public class ConfigManager {
         hypeDurationSeconds = config.getInt("general.hype-duration-seconds", 1800);
         countdownFormat = config.getString("general.countdown-format", "mm:ss");
         onlyCountOnlinePlayerVotes = config.getBoolean("general.only-count-online-player-votes", false);
+        networkEnabled = config.getBoolean("reseau.actif", true);
+        networkChannel = config.getString("reseau.canal", "shhypevotes");
 
         // Logging
         loggingEnabled = config.getBoolean("logging.enabled", true);
