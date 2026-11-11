@@ -318,7 +318,7 @@ public class HypeTrainManager {
         publishState();
     }
 
-    /** Mode réseau : le meneur annonce l'état du Hype aux autres serveurs (commande /shh status). */
+    /** Mode réseau : le meneur annonce l'état du Hype aux autres serveurs (commande /shhypevotes status). */
     private void publishState() {
         if (network != null && network.isOwner()) {
             network.state(isActive, currentVotes, endTimeMillis,
@@ -397,7 +397,7 @@ public class HypeTrainManager {
         mirrorVoterCount = 0;
     }
 
-    /** Serveur qui ne mène pas : état annoncé par le meneur, pour /shh status. */
+    /** Serveur qui ne mène pas : état annoncé par le meneur, pour /shhypevotes status. */
     void mirrorState(boolean active, int votes, long endsAt, int goalThreshold, int voters) {
         isActive = active;
         currentVotes = votes;
@@ -811,6 +811,14 @@ public class HypeTrainManager {
     public void reload() {
         cancelRandomHypeTask();
         stateStore.saveGoals(configManager.getGoals());
+        if (isActive) {
+            refreshGoals();
+            // Nouvel intervalle de la barre de boss : la tâche en cours est relancée
+            if (hypeTrainTask != null && !hypeTrainTask.isCancelled()) {
+                hypeTrainTask.cancel();
+                startTicker();
+            }
+        }
         if (isActive && bossBar != null) {
             if (!configManager.bossBarEnabled) {
                 bossBar.removeAll();
@@ -831,6 +839,33 @@ public class HypeTrainManager {
         }
         scheduleRandomHypeTrainAttempt();
         plugin.logInfo("HypeTrainManager a pris en compte la configuration rechargée.");
+    }
+
+    /**
+     * Rattache le Hype en cours aux paliers rechargés : le palier atteint est repris par sa clé (ses commandes de
+     * récompense sont celles de la nouvelle configuration), ou déduit des votes s'il n'existe plus.
+     */
+    private void refreshGoals() {
+        Goal reached = null;
+        if (currentHighestGoalReached != null) {
+            String key = currentHighestGoalReached.key();
+            for (Goal goal : configManager.getGoals()) {
+                if (goal.key().equals(key)) {
+                    reached = goal;
+                }
+            }
+        }
+        if (reached == null) {
+            for (Goal goal : configManager.getGoals()) {
+                if (currentVotes >= goal.threshold()) {
+                    reached = goal;
+                } else {
+                    break;
+                }
+            }
+        }
+        currentHighestGoalReached = reached;
+        nextGoalToAnnounce = findNextGoalInternal(reached != null ? reached.threshold() : 0);
     }
 
     public void addPlayerToBossBar(Player player) {

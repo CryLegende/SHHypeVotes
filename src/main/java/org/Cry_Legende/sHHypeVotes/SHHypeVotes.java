@@ -25,8 +25,7 @@ public class SHHypeVotes extends JavaPlugin {
 
         // 1. Charger la configuration
         configManager = new ConfigManager(this); // Crée les fichiers par défaut si besoin
-        // Recharger une fois pour s'assurer que toutes les valeurs par défaut sont bien lues après création
-        configManager.reloadConfigs();
+        configManager.loadOrDefaults();
 
 
         // 2. Initialiser le logger et le gestionnaire du Hype Train
@@ -50,8 +49,8 @@ public class SHHypeVotes extends JavaPlugin {
 
         // 4. Enregistrer les commandes
         HypeCommands hypeCommandsExecutor = new HypeCommands(this);
-        Objects.requireNonNull(getCommand("shh")).setExecutor(hypeCommandsExecutor);
-        Objects.requireNonNull(getCommand("shh")).setTabCompleter(hypeCommandsExecutor);
+        Objects.requireNonNull(getCommand("shhypevotes")).setExecutor(hypeCommandsExecutor);
+        Objects.requireNonNull(getCommand("shhypevotes")).setTabCompleter(hypeCommandsExecutor);
 
         // 5. Démarrer la tâche pour les lancements aléatoires (en mode réseau : celle du meneur, une fois désigné)
         if (network != null) {

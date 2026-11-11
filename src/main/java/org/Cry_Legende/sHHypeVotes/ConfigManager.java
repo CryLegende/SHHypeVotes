@@ -2,6 +2,7 @@ package org.Cry_Legende.sHHypeVotes;
 
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -76,30 +77,74 @@ public class ConfigManager {
         }
     }
 
-    public void reloadConfigs() {
+    /** Erreur de lecture d'un fichier de configuration : nom du fichier et cause. */
+    public static final class ConfigException extends Exception {
+        private final String file;
+
+        ConfigException(String file, String message) {
+            super(message);
+            this.file = file;
+        }
+
+        public String getFile() {
+            return file;
+        }
+    }
+
+    /**
+     * Relit config.yml et messages.yml. Rien n'est remplacé tant que les deux fichiers ne sont pas lus sans erreur :
+     * sinon l'exception porte le fichier en cause et l'ancienne configuration reste en place.
+     */
+    public void reloadConfigs() throws ConfigException {
         configFile = new File(plugin.getDataFolder(), "config.yml");
         if (!configFile.exists()) {
             plugin.saveResource("config.yml", false);
         }
-        config = YamlConfiguration.loadConfiguration(configFile);
-        try (InputStream defaultConfigStream = plugin.getResource("config.yml")) {
-            if (defaultConfigStream != null) {
-                config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(defaultConfigStream, StandardCharsets.UTF_8)));
-            }
-        } catch (IOException e) {
-            plugin.logWarn("Lecture des valeurs par défaut de config.yml impossible: " + e.getMessage());
-        }
+        YamlConfiguration newConfig = strict(configFile);
+        newConfig.setDefaults(loadBundled("config.yml"));
 
         messagesFile = new File(plugin.getDataFolder(), "messages.yml");
         if (!messagesFile.exists()) {
             plugin.saveResource("messages.yml", false);
         }
-        messages = YamlConfiguration.loadConfiguration(messagesFile);
-        FileConfiguration bundledMessages = loadBundledMessages();
-        if (bundledMessages != null) {
-            messages.setDefaults(bundledMessages);
-        }
+        YamlConfiguration newMessages = strict(messagesFile);
+        newMessages.setDefaults(loadBundled("messages.yml"));
+
+        config = newConfig;
+        messages = newMessages;
         parseConfigValues();
+    }
+
+    /** Démarrage : un fichier illisible est signalé et remplacé par les valeurs du jar. */
+    public void loadOrDefaults() {
+        try {
+            reloadConfigs();
+        } catch (ConfigException e) {
+            plugin.logSevere("Fichier " + e.getFile() + " illisible, valeurs du jar utilisées : " + e.getMessage());
+            config = loadBundled("config.yml");
+            messages = loadBundled("messages.yml");
+            parseConfigValues();
+        }
+    }
+
+    private YamlConfiguration strict(File file) throws ConfigException {
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.load(file);
+        } catch (IOException | InvalidConfigurationException e) {
+            String reason = e.getMessage() == null ? e.toString() : e.getMessage().lines().findFirst().orElse("");
+            throw new ConfigException(file.getName(), reason);
+        }
+        return yaml;
+    }
+
+    private YamlConfiguration loadBundled(String name) {
+        try (InputStream in = plugin.getResource(name)) {
+            return in == null ? new YamlConfiguration()
+                : YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            return new YamlConfiguration();
+        }
     }
 
     /** Messages par défaut embarqués dans le jar (flux refermé), ou null s'ils sont illisibles. */

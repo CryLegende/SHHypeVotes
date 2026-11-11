@@ -9,8 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class HypeCommands implements CommandExecutor, TabCompleter {
@@ -25,9 +25,28 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
         this.hypeTrainManager = plugin.getHypeTrainManager();
     }
 
+    /** Sous-commandes, dans l'ordre d'affichage de la ligne d'usage. */
+    private static final List<String> SUBCOMMANDS = List.of("start", "stop", "end", "reload", "status");
+
+    private static String permission(String sub) {
+        return "shhypevotes.admin." + sub;
+    }
+
+    /** Sous-commandes que l'expéditeur a le droit d'utiliser. */
+    private static List<String> allowed(CommandSender sender) {
+        List<String> names = new ArrayList<>();
+        for (String sub : SUBCOMMANDS) {
+            if (sender.hasPermission(permission(sub))) {
+                names.add(sub);
+            }
+        }
+        return names;
+    }
+
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
-        if (!sender.hasPermission("shh.admin")) {
+        List<String> allowed = allowed(sender);
+        if (allowed.isEmpty()) {
             sender.sendMessage(configManager.getPrefixedMessage("no-permission"));
             return true;
         }
@@ -36,11 +55,11 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (args.length == 0) {
-            sendHelp(sender);
+        String subCommand = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
+        if (!allowed.contains(subCommand)) {
+            sender.sendMessage(text("usage", "%subcommands%", String.join("|", allowed)));
             return true;
         }
-        String subCommand = args[0].toLowerCase();
 
         switch (subCommand) {
             case "start":
@@ -55,12 +74,8 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
             case "reload":
                 handleReloadCommand(sender);
                 break;
-            case "status":
-                handleStatusCommand(sender);
-                break;
             default:
-                sender.sendMessage(configManager.getPrefixedMessage("unknown-subcommand"));
-                sendHelp(sender);
+                handleStatusCommand(sender);
                 break;
         }
         return true;
@@ -121,7 +136,13 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
     }
 
     private void handleReloadCommand(CommandSender sender) {
-        configManager.reloadConfigs();
+        try {
+            configManager.reloadConfigs();
+        } catch (ConfigManager.ConfigException e) {
+            plugin.logSevere("Rechargement annulé, " + e.getFile() + " illisible : " + e.getMessage());
+            sender.sendMessage(text("reload-failed", "%file%", e.getFile(), "%error%", String.valueOf(e.getMessage())));
+            return;
+        }
         hypeTrainManager.reload();
         sender.sendMessage(configManager.getPrefixedMessage("reload-success"));
         plugin.logInfo("Configuration rechargée par " + sender.getName() + ".");
@@ -165,12 +186,6 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage(text("status-footer"));
     }
 
-    private void sendHelp(CommandSender sender) {
-        for (String line : configManager.getMessageList("help")) {
-            sender.sendMessage(line);
-        }
-    }
-
     /** Message de messages.yml dont les placeholders sont remplacés (paires placeholder, valeur). */
     private String text(String key, String... replacements) {
         String message = configManager.getMessage(key);
@@ -187,10 +202,10 @@ public class HypeCommands implements CommandExecutor, TabCompleter {
     @Nullable
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String alias, @NotNull String[] args) {
-        if (!sender.hasPermission("shh.admin")) return null;
         if (args.length == 1) {
-            return Arrays.asList("start", "stop", "end", "reload", "status").stream()
-                .filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase()))
+            String prefix = args[0].toLowerCase(Locale.ROOT);
+            return allowed(sender).stream()
+                .filter(s -> s.startsWith(prefix))
                 .collect(Collectors.toList());
         }
         return new ArrayList<>();

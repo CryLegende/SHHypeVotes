@@ -9,13 +9,33 @@ depend: [SHVotesReward]
 softdepend: [SHLogs, SHNetwork]
 
 commands:
-  shh:
-    description: Commande principale pour SHHypeVotes.
-    aliases: [hypevotes, hv, shhvote]
-    permission: shh.admin
-    usage: "/shh <start|stop|end|reload|status>"
+  shhypevotes:
+    description: Administration de SHHypeVotes.
+    aliases: [shh, hypevotes, hv, shhvote]
+    usage: "/shhypevotes <start|stop|end|reload|status>"
 
 permissions:
-  shh.admin:
-    description: Permet d'utiliser toutes les commandes de SHHypeVotes.
+  shhypevotes.admin:
+    description: Toutes les commandes d'administration de SHHypeVotes.
     default: op
+    children:
+      shhypevotes.admin.start: true
+      shhypevotes.admin.stop: true
+      shhypevotes.admin.end: true
+      shhypevotes.admin.reload: true
+      shhypevotes.admin.status: true
+  shhypevotes.admin.start:
+    description: Démarrer un Hype Train de force.
+    default: false
+  shhypevotes.admin.stop:
+    description: Arrêter le Hype Train en cours sans récompenses.
+    default: false
+  shhypevotes.admin.end:
+    description: Terminer le Hype Train en cours en distribuant les récompenses.
+    default: false
+  shhypevotes.admin.reload:
+    description: Recharger config.yml et messages.yml.
+    default: false
+  shhypevotes.admin.status:
+    description: Afficher l'état du Hype Train.
+    default: false

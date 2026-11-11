@@ -9,13 +9,14 @@ prefix: "" # Le préfixe est géré par message individuel
 
 no-permission: "&7&l« &c&lSH &8&l» &7Vous n'avez pas la permission d'utiliser cette commande."
 player-only-command: "&7&l« &c&lSH &8&l» &7Cette commande ne peut être exécutée que par un joueur."
-unknown-subcommand: "&7&l« &c&lSH &8&l» &7Sous-commande inconnue. Usage: &c/shh <start|stop|reload|status>"
+usage: "&7&l« &e&lSH &8&l» &7Utilisation : &e/shhypevotes &7<&e%subcommands%&7>"
 
 hype-already-active: "&7&l« &c&lSH &8&l» &7Un Hype est déjà en cours !"
 hype-not-active: "&7&l« &c&lSH &8&l» &7Il n'y a pas de Hype en cours."
 force-start-success: "&7&l« &a&lSH &8&l» &7Hype démarré de force !"
 force-stop-success: "&7&l« &a&lSH &8&l» &7Hype arrêté de force."
-reload-success: "&7&l« &a&lSH &8&l» &7Configuration et messages de SHHypeVotes rechargés."
+reload-success: "&7&l« &a&lSH &8&l» &7Configuration et messages de SHHypeVotes rechargés. Le bloc &ereseau &7demande un redémarrage."
+reload-failed: "&7&l« &c&lSH &8&l» &7Rechargement annulé : &c%file% &7est illisible (&c%error%&7). L'ancienne configuration est gardée."
 network-forwarded: "&7&l« &e&lSH &8&l» &7Demande transmise au serveur qui mène le &eHype Train&7."
 
 # Placeholders pour les messages suivants:
@@ -85,21 +86,13 @@ no-next-goal-placeholder: "Tous atteints !"
 no-final-goal-placeholder: "Aucun palier"
 no-final-reward-placeholder: "Aucune récompense"
 
-# Erreurs des commandes /shh.
+# Erreurs des commandes /shhypevotes. %subcommands% : sous-commandes permises à l'expéditeur ; %file% et %error% :
+# fichier illisible au rechargement.
 not-initialized: "&7&l« &c&lSH &8&l» &7Le plugin n'est pas correctement initialisé. Consultez la &cconsole&7."
 start-no-goals: "&7&l« &c&lSH &8&l» &7Impossible de démarrer : &caucun palier &7n'est configuré."
 start-failed: "&7&l« &c&lSH &8&l» &7Le Hype n'a pas pu démarrer. Consultez la &cconsole&7."
 
-# Aide de /shh : une ligne par élément, sans préfixe.
-help:
-  - "&bCommandes disponibles:"
-  - "&6/shh start &7- Démarre de force un Hype Train."
-  - "&6/shh stop &7- Arrête de force le Hype Train en cours."
-  - "&6/shh end &7- Termine le Hype en distribuant les récompenses atteintes."
-  - "&6/shh reload &7- Recharge la configuration du plugin."
-  - "&6/shh status &7- Affiche le statut actuel du Hype Train."
-
-# Statut de /shh status : une ligne par message, sans préfixe.
+# Statut de /shhypevotes status : une ligne par message, sans préfixe.
 # Placeholders : %votes% votes du Hype, %time% temps restant ou avant la prochaine tentative, %goal% nom du palier,
 # %threshold% son seuil, %voters% votants uniques, %count% paliers configurés.
 status-header: "&6--- &eStatut SHHypeVotes &6---"

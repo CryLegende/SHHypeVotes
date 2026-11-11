@@ -7,15 +7,19 @@
 # sont lancées pour chaque votant. Un Hype Train se lance aussi tout seul, au hasard, quand assez de joueurs
 # sont en ligne.
 #
-# Commandes (alias /hypevotes, /hv, /shhvote) :
-#   /shh start    Démarre de force un Hype Train.
-#   /shh stop     Arrête de force le Hype Train en cours, sans récompenses.
-#   /shh end      Termine le Hype Train en cours en distribuant les récompenses atteintes.
-#   /shh reload   Recharge config.yml et messages.yml.
-#   /shh status   Affiche l'état du Hype Train.
+# Commandes (racine /shhypevotes, alias /shh, /hypevotes, /hv, /shhvote) :
+#   /shhypevotes start    Démarre de force un Hype Train.
+#   /shhypevotes stop     Arrête de force le Hype Train en cours, sans récompenses.
+#   /shhypevotes end      Termine le Hype Train en cours en distribuant les récompenses atteintes.
+#   /shhypevotes reload   Recharge config.yml et messages.yml (le bloc reseau demande un redémarrage). Un fichier
+#                         invalide annule le rechargement. Un Hype en cours prend les nouveaux paliers (commandes de
+#                         récompense comprises) et le nouvel intervalle de la barre de boss ; hype-duration-seconds ne
+#                         s'applique qu'au Hype suivant.
+#   /shhypevotes status   Affiche l'état du Hype Train.
 #
 # Permissions :
-#   shh.admin   Utiliser /shh (op par défaut).
+#   shhypevotes.admin           Toutes les commandes ci-dessus (op par défaut).
+#   shhypevotes.admin.start, .stop, .end, .reload, .status   Une seule commande.
 #
 # Les textes sont dans messages.yml. Le résumé de chaque Hype Train terminé est écrit dans le fichier hype de SHLogs.
 
@@ -24,7 +28,7 @@
 # Les autres serveurs lui transmettent les votes qu'ils reçoivent et affichent ses annonces, ses sons et sa barre
 # de boss. Un votant connecté sur n'importe quel serveur compte comme en ligne. Le Hype en cours et ses votants sont
 # gardés en base : si le meneur s'arrête, le serveur qui prend sa place le reprend (sans rien annoncer).
-# /shh start, stop et end lancés sur un autre serveur sont transmis au meneur.
+# /shhypevotes start, stop et end lancés sur un autre serveur sont transmis au meneur. Demande un redémarrage.
 # Sans SHNetwork, cette section ne sert pas.
 reseau:
   actif: true

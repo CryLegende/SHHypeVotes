@@ -118,7 +118,7 @@ final class HypeNetwork {
         bus.publish(channel, o);
     }
 
-    /** /shh start, stop ou end lancé sur un serveur qui ne mène pas : la demande part au meneur. */
+    /** /shhypevotes start, stop ou end lancé sur un serveur qui ne mène pas : la demande part au meneur. */
     void command(String action) {
         JsonObject o = new JsonObject();
         o.addProperty("type", "cmd");

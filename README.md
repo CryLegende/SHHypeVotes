@@ -25,7 +25,7 @@ Utilisé sur : **Opale**.
 Avec **SHNetwork** chargé et `reseau.actif: true` (par défaut), un seul Hype Train sert tout le réseau. Sans SHNetwork, rien ne change.
 
 - **Un seul meneur** (`leader` SHNetwork, tâche `shhypevotes`) fait tourner le Hype : départs au hasard (joueurs comptés sur tout le réseau), votes, paliers, temps ajouté, fin et récompenses. Les commandes de paliers passent par `qc queue` : la récompense arrive sur le serveur où se trouve le joueur.
-- **Les autres serveurs** transmettent au meneur les votes reçus par SHVotesReward chez eux, et affichent ce qu'il publie sur le bus (`reseau.canal`) : annonces, sons, barre de boss, état pour `/shh status`. `/shh start`, `stop` et `end` y sont transmis au meneur.
+- **Les autres serveurs** transmettent au meneur les votes reçus par SHVotesReward chez eux, et affichent ce qu'il publie sur le bus (`reseau.canal`) : annonces, sons, barre de boss, état pour `/shhypevotes status`. `/shhypevotes start`, `stop` et `end` y sont transmis au meneur.
 - **Votant en ligne** : connecté sur n'importe quel serveur du réseau (présence SHNetwork), et plus seulement sur celui qui a reçu le vote.
 - **Reprise** : le Hype en cours (`shh_state`) et ses votants (`shh_voters`) sont gardés en base. Si le meneur s'arrête, le serveur qui prend sa place reprend le Hype sans rien annoncer ; un Hype dont l'heure de fin est passée pendant l'arrêt est terminé tout de suite, avec ses récompenses. Sur un serveur seul, le Hype repart toujours à zéro au démarrage, comme avant.
 
@@ -36,15 +36,22 @@ Avec **SHNetwork** chargé et `reseau.actif: true` (par défaut), un seul Hype T
 
 ## Commandes
 
-| Commande | Alias | Description | Permission |
-|---|---|---|---|
-| `/shh` | `/hypevotes`, `/hv`, `/shhvote` | Commande principale pour SHHypeVotes. | `shh.admin` |
+Racine d'administration `/shhypevotes`, alias `/shh`, `/hypevotes`, `/hv`, `/shhvote`. Chaque sous-commande a sa permission ; elles marchent aussi depuis la console.
+
+| Commande | Description | Permission |
+|---|---|---|
+| `/shhypevotes start` | Démarre de force un Hype Train | `shhypevotes.admin.start` |
+| `/shhypevotes stop` | Arrête le Hype Train en cours, sans récompenses | `shhypevotes.admin.stop` |
+| `/shhypevotes end` | Termine le Hype Train en cours en distribuant les récompenses atteintes | `shhypevotes.admin.end` |
+| `/shhypevotes reload` | Recharge `config.yml` et `messages.yml` (le bloc `reseau` demande un redémarrage) ; un fichier invalide annule le rechargement | `shhypevotes.admin.reload` |
+| `/shhypevotes status` | Affiche l'état du Hype Train | `shhypevotes.admin.status` |
 
 ## Permissions
 
 | Permission | Description | Par défaut |
 |---|---|---|
-| `shh.admin` | Permet d'utiliser toutes les commandes de SHHypeVotes. | `op` |
+| `shhypevotes.admin` | Toutes les commandes d'administration (parent des suivantes) | `op` |
+| `shhypevotes.admin.start`, `.stop`, `.end`, `.reload`, `.status` | Une permission par sous-commande | `false` |
 
 ## Configuration
 
