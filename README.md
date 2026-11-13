@@ -55,7 +55,7 @@ Racine d'administration `/shhypevotes`, alias `/shh`, `/hypevotes`, `/hv`, `/shh
 
 ## Configuration
 
-Fichiers par défaut repris du serveur (secrets remplacés par `CHANGE_ME`). Cliquez sur un fichier pour l'ouvrir :
+Fichiers par défaut, avec des valeurs d'exemple. Cliquez sur un fichier pour l'ouvrir :
 
 <pre>
 plugins/SHHypeVotes/
